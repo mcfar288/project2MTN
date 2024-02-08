@@ -66,7 +66,8 @@ void write_filepath_to_submissions(const char *directoryPath, const char *output
 }
 
 /* The inline keyword is used to suggest that the compiler embeds the function's code directly 
-at each point of call, potentially reducing function call overhead and improving execution speed */
+at each point of call, potentially reducing function call overhead and improving execution speed. 
+Note: timer returns millisecond */
 
 static inline void start_timer(struct timeval *start) {
     gettimeofday(start, NULL);

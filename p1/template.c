@@ -4,16 +4,14 @@
 #include <signal.h>
 
 #define L 5
-
+#define S 1
 
 void infinite_loop() {
-    while (1) {
-        // Infinite loop
-    }
+    sleep(L);    // Simulating a infinite loop
 }
 
 void slow_process() {
-    sleep(5 * L);  // Sleep for 10 seconds, simulating a slow process
+    sleep(S + 1);  // Simulating a slow process
 }
 
 int main(int argc, char *argv[]) {
