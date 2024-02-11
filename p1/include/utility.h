@@ -11,11 +11,38 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <sys/time.h>
+#include <time.h>
 #include <limits.h> // For PATH_MAX
 
 
-#define S 1   // Define timeout for slow
-#define L 5  // Define timeout for stuck or infinite
+#define L 20  // Define timeout for stuck or infinite
+#define S 5   // Define timeout for slow
+
+
+// Define an enum for the program execution outcomes
+enum {
+    CORRECT = 1,     // Corresponds to case 1: Exit with status 0 (correct answer)
+    INCORRECT,       // Corresponds to case 2: Exit with status 1 (incorrect answer)
+    SEGFAULT,        // Corresponds to case 3: Triggering a segmentation fault
+    INFLOOP,         // Corresponds to case 4: Entering an infinite loop
+    STUCK_BLOCK,     // Corresponds to case 5: Simulating being stuck/blocked
+    SLOW             // Corresponds to case 6: Simulating a slow process
+};
+
+
+// Function to get status message
+const char* get_status_message(int status) {
+    switch (status) {
+        case CORRECT: return "correct";
+        case INCORRECT: return "incorrect";
+        case SLOW: return "slow";
+        case SEGFAULT: return "segfault";
+        case STUCK_BLOCK: return "stuck or block";
+        case INFLOOP: return "infloop";
+        default: return "unknown";
+    }
+}
+
 
 /**
  * Writes the full paths of all files within a specified directory to a given output file.
@@ -67,7 +94,7 @@ void write_filepath_to_submissions(const char *directoryPath, const char *output
 
 /* The inline keyword is used to suggest that the compiler embeds the function's code directly 
 at each point of call, potentially reducing function call overhead and improving execution speed. 
-Note: timer returns millisecond */
+Note: timer returns second */
 
 static inline void start_timer(struct timeval *start) {
     gettimeofday(start, NULL);
@@ -77,8 +104,8 @@ static inline double stop_timer(struct timeval *start) {
     struct timeval end;
     gettimeofday(&end, NULL);
     double seconds = (double)(end.tv_sec - start->tv_sec);
-    double useconds = (double)(end.tv_usec - start->tv_usec) / 1000.0;
-    return seconds * 1000.0 + useconds;
+    double useconds = (double)(end.tv_usec - start->tv_usec) / 1000000.0;
+    return seconds + useconds;
 }
 
 #endif // UTILITY_H
