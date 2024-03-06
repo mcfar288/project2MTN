@@ -13,6 +13,8 @@ int total_params;         // Total number of parameters to test - (argc - 2)
 // Contains status of child processes (-1 for done, 1 for still running)
 int *child_status;
 
+#define MAX_STRING_SIZE 1024
+
 
 // TODO: Timeout handler for alarm signal
 void timeout_handler(int signum) {
@@ -32,8 +34,20 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
     // Child process
     if (pid == 0) {
         char *executable_name = get_exe_name(executable_path);
+        char file_name[MAX_STRING_SIZE] = "";
+
+        snprintf(file_name, sizeof(file_name), "output/%s.%s", executable_name, input);
+
+        printf("%s\n", file_name);
+
+
 
         // TODO (Change 1): Redirect STDOUT to output/<executable>.<input> file
+        int out_file = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, 0666); // Ask about modes (0666)
+        int dup_stdout = dup(1);
+        dup2(out_file, 1);
+        // printf("%s\n", input);
+        // dup2(dup_stdout, 1);
 
 
         // TODO (Change 2): Handle different cases for input source
