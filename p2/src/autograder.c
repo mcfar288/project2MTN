@@ -52,12 +52,13 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
 
         // TODO (Change 2): Handle different cases for input source
         #ifdef EXEC
-
+            execl();
 
         #elif REDIR
-            
             // TODO: Redirect STDIN to input/<input>.in file
-            
+            int in_file = open();
+            int dup_stdin = dup(1);
+            dup2()
 
         #elif PIPE
             
