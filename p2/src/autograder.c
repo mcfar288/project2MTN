@@ -46,8 +46,8 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
         int out_file = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, 0666); // Ask about modes (0666)
         int dup_stdout = dup(1);
         dup2(out_file, 1);
-        printf("%s\n", input);
-        dup2(dup_stdout, 1);
+        // printf("%s\n", input);
+        // dup2(dup_stdout, 1);
 
 
         // TODO (Change 2): Handle different cases for input source
