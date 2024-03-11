@@ -3,13 +3,17 @@
 #include <unistd.h>
 #include <signal.h>
 
-
+#define MAX_STRING_SIZE 1024
 
 void infinite_loop() {
     while(1){};    // Simulating a infinite loop
 }
 
 int main(int argc, char *argv[]) {
+
+    char out_file_name[MAX_STRING_SIZE] = "";
+    snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", argv[0], argv[1]);
+
     #ifndef REDIR
         if (argc < 2) {
             // Usage for  EXEC:  argv[0] <param>    # Input is just param
@@ -30,7 +34,7 @@ int main(int argc, char *argv[]) {
 
     // TODO: Get input param from the different sources
     #ifdef EXEC
-        
+        param = atoi(argv[1]);
 
     #elif REDIR
        
@@ -48,6 +52,8 @@ int main(int argc, char *argv[]) {
 
     sleep(1); 
 
+    FILE* fh = fopen(out_file_name, "w");
+
     switch (mode) {
         case 1:
             // Using fprintf(stderr, ...) since STDOUT is redirected to a file
@@ -56,10 +62,14 @@ int main(int argc, char *argv[]) {
             //       Do not open the file. Think about what function you can use to output
             //       information given what you redirected in the autograder.c file.
 
+            fprintf(fh, "%d", 0);
+
             break;
         case 2:
             fprintf(stderr, "Program: %s, PID: %d, Mode: 2 - Exiting with status 1 (Incorrect answer)\n", argv[0], pid);
             // TODO: Write the result (1) to the output file (same as case 1 above)
+
+            fprintf(fh, "%d", 1);
             
             break;
         case 3:

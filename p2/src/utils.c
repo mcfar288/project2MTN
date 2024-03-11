@@ -1,5 +1,7 @@
 #include "utils.h"
 
+#define MAX_STRING_SIZE 1024
+
 
 const char* get_status_message(int status) {
     switch (status) {
@@ -93,7 +95,13 @@ int get_batch_size() {
 
 // TODO: Implement this function
 void create_input_files(char **argv_params, int num_parameters) {
-
+    for(int i = 0; i < num_parameters; i++) {
+        char in_file_name[MAX_STRING_SIZE] = "";
+        snprintf(in_file_name, sizeof(in_file_name), "input/%s.in", argv_params[i]);
+        FILE* fh = fopen(in_file_name, "w");
+        fprintf(fh, "%s", argv_params[i]);
+        fclose(fh);
+    }
 }
 
 // TODO: Implement this function
