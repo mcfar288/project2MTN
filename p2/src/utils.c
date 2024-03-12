@@ -98,13 +98,14 @@ void create_input_files(char **argv_params, int num_parameters) {
 
 // TODO: Implement this function
 void start_timer(int seconds, void (*timeout_handler)(int)) {
-
+    signal(SIGALRM, timeout_handler);
+    alarm(seconds);
 }
 
 
 // TODO: Implement this function
 void cancel_timer() {
-
+    alarm(0);
 }
 
 
@@ -122,10 +123,9 @@ void remove_input_files(char **argv_params, int num_parameters) {
 
 // TODO: Implement this function
 void remove_output_files(autograder_results_t *results, int tested, int current_batch_size, char *param) {
-    unlink();
-    for (int i = 0; i < curr_batch_size; i ++) {
+    for (int i = 0; i < current_batch_size; i ++) {
         char out_file_name[MAX_STRING_SIZE] = "";
-        snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", get_exe_name(results.exe_path), param);
+        snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", get_exe_name(results[tested - current_batch_size + i].exe_path), param);
         if (unlink(out_file_name) == -1) {
             perror("Unlink error");
         }

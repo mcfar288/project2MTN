@@ -18,7 +18,10 @@ int *child_status;
 
 // TODO: Timeout handler for alarm signal - kill remaining child processes
 void timeout_handler(int signum) {
-
+    if (signum == SIGALRM) {
+        
+        kill(pids, SIGKILL);
+    }
 }
 
 
@@ -52,15 +55,18 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
 
         // TODO (Change 2): Handle different cases for input source
         #ifdef EXEC
-            execl(executable_path, executable_name, input);
+            execl(executable_path, executable_name, input, NULL);
 
         #elif REDIR
             // TODO: Redirect STDIN to input/<input>.in file
             char in_file_name[MAX_STRING_SIZE] = "";
+            snprintf(in_file_name, sizeof(in_file_name), "input/%s.in", input);
 
-            int in_file = open(in_file_name, <flags>, <modes>);
+            int in_file = open(in_file_name, O_WRONLY, 0644);
             int dup_stdin = dup(0);
             dup2(in_file, 0);
+
+            execl(executable_path, executable_name, NULL);
 
         #elif PIPE
             
@@ -111,6 +117,19 @@ void monitor_and_evaluate_solutions(int tested, char *param, int param_idx) {
         int exit_status = WEXITSTATUS(status);
         int exited = WIFEXITED(status);
         int signaled = WIFSIGNALED(status);
+
+        int status_check;
+        char out_file_name[MAX_STRING_SIZE] = "";
+        snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", get_exe_name(results[tested - curr_batch_size + j].exe_path), results[tested - curr_batch_size + j].params_tested[param_idx]);
+        FILE* fh = fopen(out_file_name, "r");
+        fscanf(fh, "%d", &status_check);
+        if (signaled && WTERMSIG(status) == SIGSEGV) {          // Segfault
+            results[tested - curr_batch_size + j].status[param_idx] = 3;
+        } else if (exited && (status_check == 0 || status_check == 1)) {           // Corrct or Incorrect
+            results[tested - curr_batch_size + j].status[param_idx] = status_check + 1;
+        } else {        // Timeout
+            results[tested - curr_batch_size + j].status[param_idx] = 4;
+        }
         
         
         // TODO: Also, update the results struct with the status of the child process

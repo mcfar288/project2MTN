@@ -37,7 +37,16 @@ int main(int argc, char *argv[]) {
         param = atoi(argv[1]);
 
     #elif REDIR
-       
+        // ASK!!!
+
+        scanf("%d", &param);
+
+        // OR
+
+        // char param_str[16];
+        // scanf("%[^\n]%*c", param_str);
+        // param = atoi(param_str);
+
         
     #elif PIPE
 
