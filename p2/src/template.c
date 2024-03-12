@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
         seed += (unsigned char)argv[0][i]; 
     }
 
-    unsigned int param = 0;
+    int param = 0;
 
     // TODO: Get input param from the different sources
     #ifdef EXEC
@@ -40,6 +40,9 @@ int main(int argc, char *argv[]) {
        
         
     #elif PIPE
+
+
+    #elif MQUEUE
         
 
     #endif
@@ -50,10 +53,6 @@ int main(int argc, char *argv[]) {
     int mode = random() % 5 + 1;
     pid_t pid = getpid(); 
 
-    sleep(1); 
-
-    FILE* fh = fopen(out_file_name, "w");
-
     switch (mode) {
         case 1:
             // Using fprintf(stderr, ...) since STDOUT is redirected to a file
@@ -62,14 +61,14 @@ int main(int argc, char *argv[]) {
             //       Do not open the file. Think about what function you can use to output
             //       information given what you redirected in the autograder.c file.
 
-            fprintf(fh, "%d", 0);
+            printf("%d", 0);
 
             break;
         case 2:
             fprintf(stderr, "Program: %s, PID: %d, Mode: 2 - Exiting with status 1 (Incorrect answer)\n", argv[0], pid);
             // TODO: Write the result (1) to the output file (same as case 1 above)
 
-            fprintf(fh, "%d", 1);
+            printf("%d", 1);
             
             break;
         case 3:

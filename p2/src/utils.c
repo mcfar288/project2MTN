@@ -19,15 +19,6 @@ char *get_exe_name(char *path) {
 }
 
 
-int get_tag(char *executable_name) {
-    unsigned int seed = 0;
-    for (int i = 0; i < strlen(executable_name); i++) {
-        seed += (int)executable_name[i];
-    }
-    return seed;
-}
-
-
 char **get_student_executables(char *solution_dir, int *num_executables) {
     DIR *dir;
     struct dirent *entry;
@@ -104,15 +95,41 @@ void create_input_files(char **argv_params, int num_parameters) {
     }
 }
 
+
 // TODO: Implement this function
-void remove_input_files(char **argv_params, int num_parameters) {
+void start_timer(int seconds, void (*timeout_handler)(int)) {
 
 }
 
 
 // TODO: Implement this function
-void remove_output_files(autograder_results_t *results, int tested, int current_batch_size, char *param) {
+void cancel_timer() {
 
+}
+
+
+// TODO: Implement this function
+void remove_input_files(char **argv_params, int num_parameters) {
+    for(int i = 0; i < num_parameters; i ++) {
+        char in_file_name[MAX_STRING_SIZE] = "";
+        snprintf(in_file_name, sizeof(in_file_name), "input/%s.in", argv_params[i]);
+        if (unlink(in_file_name) == -1) {
+            perror("Unlink error");
+        }
+    }
+}
+
+
+// TODO: Implement this function
+void remove_output_files(autograder_results_t *results, int tested, int current_batch_size, char *param) {
+    unlink();
+    for (int i = 0; i < curr_batch_size; i ++) {
+        char out_file_name[MAX_STRING_SIZE] = "";
+        snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", get_exe_name(results.exe_path), param);
+        if (unlink(out_file_name) == -1) {
+            perror("Unlink error");
+        }
+    }
 }
 
 

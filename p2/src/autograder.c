@@ -16,7 +16,7 @@ int *child_status;
 #define MAX_STRING_SIZE 1024
 
 
-// TODO: Timeout handler for alarm signal
+// TODO: Timeout handler for alarm signal - kill remaining child processes
 void timeout_handler(int signum) {
 
 }
@@ -43,7 +43,7 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
 
 
         // TODO (Change 1): Redirect STDOUT to output/<executable>.<input> file
-        int out_file = open(out_file_name, O_WRONLY|O_CREAT|O_TRUNC, 0666); // Ask about modes (0666)
+        int out_file = open(out_file_name, O_WRONLY|O_CREAT|O_TRUNC, 0644);
         int dup_stdout = dup(1);
         dup2(out_file, 1);
         // printf("%s\n", input);
@@ -52,7 +52,7 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
 
         // TODO (Change 2): Handle different cases for input source
         #ifdef EXEC
-            execl();
+            execl(executable_path, executable_name, input);
 
         #elif REDIR
             // TODO: Redirect STDIN to input/<input>.in file
@@ -78,8 +78,6 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
             // TODO: Send input to child process via pipe
             
         #endif
-
-        // TODO (Change 3): Setup timer to determine if child process is stuck
         
 
         pids[batch_idx] = pid;
@@ -106,6 +104,9 @@ void monitor_and_evaluate_solutions(int tested, char *param, int param_idx) {
         int status;
         pid_t pid = waitpid(pids[j], &status, 0);
 
+        // TODO: What if waitpid is interrupted by a signal?
+
+
         // TODO: Determine if the child process finished normally, segfaulted, or timed out
         int exit_status = WEXITSTATUS(status);
         int exited = WIFEXITED(status);
@@ -114,6 +115,9 @@ void monitor_and_evaluate_solutions(int tested, char *param, int param_idx) {
         
         // TODO: Also, update the results struct with the status of the child process
 
+        // NOTE: Make sure you are using the output/<executable>.<input> file to determine the status
+        //       of the child process, NOT the exit status like in Project 1.
+
 
         // Adding tested parameter to results struct
         results[tested - curr_batch_size + j].params_tested[param_idx] = atoi(param);
@@ -121,9 +125,6 @@ void monitor_and_evaluate_solutions(int tested, char *param, int param_idx) {
         // Mark the process as finished
         child_status[j] = -1;
     }
-
-    // TODO: Cancel the timer
-
 
     free(child_status);
 }
@@ -153,7 +154,7 @@ int main(int argc, char *argv[]) {
     }
 
     #ifdef REDIR
-        // TODO: Create the input/<input>.in files        
+        // TODO: Create the input/<input>.in files and write parameters to them     
         create_input_files(argv + 2, total_params);  // Implement this function (src/utils.c)
     #endif
     
@@ -175,8 +176,16 @@ int main(int argc, char *argv[]) {
 		        tested++;
             }
 
+            // TODO (Change 3): Setup timer to determine if child process is stuck
+            start_timer(TIMEOUT_SECS, timeout_handler);  // Implement this function (src/utils.c)
+
             // Wait for the batch to finish and check results
             monitor_and_evaluate_solutions(tested, argv[i], i - 2);
+
+            // TODO: Cancel the timer if all child processes have finished
+            if (child_status == NULL) {
+                cancel_timer();  // Implement this function (src/utils.c)
+            }
 
             // TODO Unlink all output files in current batch (output/<executable>.<input>)
             remove_output_files(results, tested, curr_batch_size, argv[i]);  // Implement this function (src/utils.c)
