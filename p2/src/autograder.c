@@ -18,9 +18,11 @@ int *child_status;
 
 // TODO: Timeout handler for alarm signal - kill remaining child processes
 void timeout_handler(int signum) {
-    if (signum == SIGALRM) {
-        
-        kill(pids, SIGKILL);
+    for (int i = 0; i < curr_batch_size; i ++) {
+        if (child_status[i] == 1) {
+            kill(pids[i], SIGKILL);
+            child_status[i] = 2;
+        }
     }
 }
 
@@ -120,16 +122,25 @@ void monitor_and_evaluate_solutions(int tested, char *param, int param_idx) {
 
         int status_check;
         char out_file_name[MAX_STRING_SIZE] = "";
-        snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", get_exe_name(results[tested - curr_batch_size + j].exe_path), results[tested - curr_batch_size + j].params_tested[param_idx]);
+        snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", get_exe_name(results[tested - curr_batch_size + j].exe_path), param);
         FILE* fh = fopen(out_file_name, "r");
         fscanf(fh, "%d", &status_check);
+        if (child_status[j] == 2) {
+            results[tested - curr_batch_size + j].status[param_idx] = 4;
+            child_status[j] = -1;
+        }
         if (signaled && WTERMSIG(status) == SIGSEGV) {          // Segfault
             results[tested - curr_batch_size + j].status[param_idx] = 3;
-        } else if (exited && (status_check == 0 || status_check == 1)) {           // Corrct or Incorrect
+        } 
+        // else if (signaled && WTERMSIG(status) == SIGALRM) {
+        //     results[tested - curr_batch_size + j].status[param_idx] = 4;
+        // }
+        else if (exited && (status_check == 0 || status_check == 1)) {           // Corrct or Incorrect
             results[tested - curr_batch_size + j].status[param_idx] = status_check + 1;
-        } else {        // Timeout
-            results[tested - curr_batch_size + j].status[param_idx] = 4;
-        }
+        } 
+        // else {        // Timeout
+        //     results[tested - curr_batch_size + j].status[param_idx] = 4;
+        // }
         
         
         // TODO: Also, update the results struct with the status of the child process
