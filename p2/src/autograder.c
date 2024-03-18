@@ -18,10 +18,10 @@ int *child_status;
 
 // TODO: Timeout handler for alarm signal - kill remaining child processes
 void timeout_handler(int signum) {
-    for (int i = 0; i < curr_batch_size; i ++) {
+    for (int i = 0; i < curr_batch_size; i ++) {        // Checks for each process, if it is running at timeout
         if (child_status[i] == 1) {
-            kill(pids[i], SIGKILL);
-            child_status[i] = 2;
+            kill(pids[i], SIGKILL);                     // Kills the process if it is running at timeout
+            child_status[i] = 2;                        // Changes status to 2 (this is used to handle the case and print "stuck/inf")
         }
     }
 }
@@ -31,6 +31,12 @@ void timeout_handler(int signum) {
 void execute_solution(char *executable_path, char *input, int batch_idx) {
     #ifdef PIPE
         // TODO: Setup pipe
+        int pipe_fds[2];
+        int ret_val = pipe(pipe_fds);
+        if (ret_val == -1) {
+            perror("Error in pipe\n");
+            exit(-1);
+        }
 
     #endif
     
@@ -38,38 +44,50 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
 
     // Child process
     if (pid == 0) {
-        char *executable_name = get_exe_name(executable_path);
-        char out_file_name[MAX_STRING_SIZE] = "";
+        char *executable_name = get_exe_name(executable_path);      // Get executable name from filepath
+        char out_file_name[MAX_STRING_SIZE] = "";                   // Var for output file name
 
-        snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", executable_name, input);
+        sprintf(out_file_name, "output/%s.%s", executable_name, input);     // Generate the name for output file 
 
         // printf("%s\n", out_file_name);
 
 
 
         // TODO (Change 1): Redirect STDOUT to output/<executable>.<input> file
+
+        // Open output file and redirect it to STDOUT using dup2
         int out_file = open(out_file_name, O_WRONLY|O_CREAT|O_TRUNC, 0644);
-        int dup_stdout = dup(1);
-        dup2(out_file, 1);
+
+        if (out_file == -1) {       // Error checking for open()
+            perror("Failed to open File");
+            exit(1);
+        }
+
+        dup2(out_file, STDOUT_FILENO);
         // printf("%s\n", input);
         // dup2(dup_stdout, 1);
 
 
         // TODO (Change 2): Handle different cases for input source
         #ifdef EXEC
-            execl(executable_path, executable_name, input, NULL);
+            execl(executable_path, executable_name, input, NULL);   // Run exec, input passed as parameter
 
         #elif REDIR
             // TODO: Redirect STDIN to input/<input>.in file
-            char in_file_name[MAX_STRING_SIZE] = "";
-            snprintf(in_file_name, sizeof(in_file_name), "input/%s.in", input);
+            char in_file_name[MAX_STRING_SIZE];    // Var for input file name
+            sprintf(in_file_name, "input/%s.in", input);     // Generate name for input file
 
-            int in_file = open(in_file_name, O_WRONLY, 0644);
-            int dup_stdin = dup(0);
-            dup2(in_file, 0);
+            // Open input file and redirect it to stdin using dup2
+            int in_file = open(in_file_name, O_RDONLY);
 
-            execl(executable_path, executable_name, NULL);
+            if (in_file == -1) {
+                perror("Failed to open file");
+                exit(1);
+            }
 
+            dup2(in_file, STDIN_FILENO);
+
+            execl(executable_path, executable_name, NULL);      // Run exec, input read from input file so not passed as parameter
         #elif PIPE
             
             // TODO: Pass read end of pipe to child process
@@ -110,33 +128,41 @@ void monitor_and_evaluate_solutions(int tested, char *param, int param_idx) {
     for (int j = 0; j < curr_batch_size; j++) {
 
         int status;
-        pid_t pid = waitpid(pids[j], &status, 0);
+        waitpid(pids[j], &status, 0);
 
         // TODO: What if waitpid is interrupted by a signal?
 
 
         // TODO: Determine if the child process finished normally, segfaulted, or timed out
-        int exit_status = WEXITSTATUS(status);
+
+        // int exit_status = WEXITSTATUS(status);
         int exited = WIFEXITED(status);
         int signaled = WIFSIGNALED(status);
 
-        int status_check;
+        int status_check;       // Var to store result (from output file) in case of correct/incorrect case
         char out_file_name[MAX_STRING_SIZE] = "";
         snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", get_exe_name(results[tested - curr_batch_size + j].exe_path), param);
         FILE* fh = fopen(out_file_name, "r");
-        fscanf(fh, "%d", &status_check);
-        if (child_status[j] == 2) {
-            results[tested - curr_batch_size + j].status[param_idx] = 4;
-            child_status[j] = -1;
+
+        if (!fh) {
+            perror("Failed to open file");
+            exit(1);
         }
-        if (signaled && WTERMSIG(status) == SIGSEGV) {          // Segfault
-            results[tested - curr_batch_size + j].status[param_idx] = 3;
+
+        fscanf(fh, "%d", &status_check);        // Reads the status from the output file in case of correct/incorrect case
+
+        if (child_status[j] == 2) {         // Process timed out and status changed to 2 in timeout handler
+            results[tested - curr_batch_size + j].status[param_idx] = 4;        // Case 4 - stuck/infloop
+            child_status[j] = -1;       // Status changed to -1 indicating process has been killed so not running anymore
+        }
+        if (signaled && WTERMSIG(status) == SIGSEGV) {          // If process is interrupted by SIGSEGV signal, its a segfault
+            results[tested - curr_batch_size + j].status[param_idx] = 3;        // Case 3 - segfault
         } 
         // else if (signaled && WTERMSIG(status) == SIGALRM) {
         //     results[tested - curr_batch_size + j].status[param_idx] = 4;
         // }
-        else if (exited && (status_check == 0 || status_check == 1)) {           // Corrct or Incorrect
-            results[tested - curr_batch_size + j].status[param_idx] = status_check + 1;
+        else if (exited && (status_check == 0 || status_check == 1)) {           // If exited normally, correct or incorrect (status read from output file)
+            results[tested - curr_batch_size + j].status[param_idx] = status_check + 1;         // Case 1 - correct (status 0 + 1 = 1) or Case 2 - incorrect (status 1 + 1 = 2)
         } 
         // else {        // Timeout
         //     results[tested - curr_batch_size + j].status[param_idx] = 4;

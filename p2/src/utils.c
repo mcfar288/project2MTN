@@ -80,16 +80,59 @@ char **get_student_executables(char *solution_dir, int *num_executables) {
 
 // TODO: Implement this function
 int get_batch_size() {
-    return 8;
+    // return 8;
+    int pipe_fds[2];
+    int ret_val = pipe(pipe_fds);
+    if (ret_val == -1) {
+        perror("Error in pipe\n");
+        exit(-1);
+    }
+
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        close(pipe_fds[0]);
+        dup2(pipe_fds[1], 1);
+        // printf("Hello\n");
+        execlp("grep", "grep", "processor", "/proc/cpuinfo",NULL);
+        perror("error in grep");
+        close(pipe_fds[1]);
+        exit(1);
+    } else if (pid > 0) {
+        int counter = 0;
+        close(pipe_fds[1]);
+        char c;
+        while(read(pipe_fds[0], &c, 1) > 0) {
+            if (c == '\n') {
+                counter ++;
+            }
+        }
+        close(pipe_fds[0]);
+        return counter;
+    } else {
+        perror("fork failed");
+        exit(1);
+    }
 }
 
 
 // TODO: Implement this function
 void create_input_files(char **argv_params, int num_parameters) {
+
+    // For all parameters, create a new file in input/<parameter>.in file
+    // Write the parameter to the file
+
     for(int i = 0; i < num_parameters; i++) {
         char in_file_name[MAX_STRING_SIZE] = "";
         snprintf(in_file_name, sizeof(in_file_name), "input/%s.in", argv_params[i]);
         FILE* fh = fopen(in_file_name, "w");
+
+        if (!fh) {
+            perror("Failed to open file");
+            exit(1);
+        }
+
         fprintf(fh, "%s", argv_params[i]);
         fclose(fh);
     }
@@ -98,6 +141,10 @@ void create_input_files(char **argv_params, int num_parameters) {
 
 // TODO: Implement this function
 void start_timer(int seconds, void (*timeout_handler)(int)) {
+
+    // Raise the SIGALRM signal to trigget an alarm after <seconds> seconds
+    // timeout_handler handles the case when signal is raised
+
     signal(SIGALRM, timeout_handler);
     alarm(seconds);
 }
@@ -111,6 +158,10 @@ void cancel_timer() {
 
 // TODO: Implement this function
 void remove_input_files(char **argv_params, int num_parameters) {
+
+    // For all parameters, generate the name for the file where it's stored (input/<parameter>.in file)
+    // And unlinks the file to remove it from directory
+
     for(int i = 0; i < num_parameters; i ++) {
         char in_file_name[MAX_STRING_SIZE] = "";
         snprintf(in_file_name, sizeof(in_file_name), "input/%s.in", argv_params[i]);
@@ -123,6 +174,11 @@ void remove_input_files(char **argv_params, int num_parameters) {
 
 // TODO: Implement this function
 void remove_output_files(autograder_results_t *results, int tested, int current_batch_size, char *param) {
+
+    // For every executable-parameter pair in current batch, 
+    // generate the name for the file where output is stored (input/<executable>.<parameter> file)
+    // And unlinks the file to remove it from directory
+
     for (int i = 0; i < current_batch_size; i ++) {
         char out_file_name[MAX_STRING_SIZE] = "";
         snprintf(out_file_name, sizeof(out_file_name), "output/%s.%s", get_exe_name(results[tested - current_batch_size + i].exe_path), param);
