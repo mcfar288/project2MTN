@@ -19,7 +19,7 @@
 #include <sys/msg.h>
 
 
-#define TIMEOUT_SECS 10    // Timeout threshold for stuck/infinite loop
+#define TIMEOUT_SECS 1    // Timeout threshold for stuck/infinite loop
 
 /************************* ONLY FOR MESSAGE QUEUES *************************/
 // Message queue msgtyp for general messages between mq_autograder and worker

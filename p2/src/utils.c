@@ -255,7 +255,58 @@ void write_results_to_file(autograder_results_t *results, int num_executables, i
 
 // TODO: Implement this function
 double get_score(char *results_file, char *executable_name) {
-    return 1.0;
+    FILE *file = fopen(results_file, "r");
+    if (!file) {
+        perror("Failed to open file");
+        exit(1);
+    }
+
+    char res[11];
+    char line[512];
+    char *exe_name = get_exe_name(executable_name);     // Gets the executable name
+    int l = atoi(strrchr(exe_name, '_') + 1);           // Gets the executable number
+
+    if (l != 1) {
+        fgets(line, sizeof(line), file);
+        if (l != 2) {
+            fseek(file, strlen(line)*(l-1), SEEK_SET);
+        }
+    }
+
+    fgets(line, sizeof(line), file);
+    // printf("%s\n", line);
+    int flag = 0;
+    int correct = 0;
+    int total = 0;
+
+    memset(res, '\0', strlen(res));
+
+    int j = 0;
+    for(int i = 0; i < strlen(line); i ++) {
+        if (line[i] == ')') {
+            flag = 0;
+            // printf("%s, ", res);
+            if (strcmp(res, "  correct") == 0) {
+                correct ++;
+            }
+            total ++;
+            memset(res, '\0', strlen(res));
+            j = 0;
+        }
+
+        if (flag == 1) {
+            res[j] = line[i];
+            j ++;
+        }
+
+        if (line[i] == '(') {
+            flag = 1;
+        }
+
+    }
+
+    fclose(file);
+    return (double) correct/total;
 }
 
 

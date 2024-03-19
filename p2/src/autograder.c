@@ -89,8 +89,11 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
 
             execl(executable_path, executable_name, NULL);      // Run exec, input read from input file so not passed as parameter
         #elif PIPE
-            
+            close(pipe_fds[1]);
+            char in[32] = "";
+            sprintf(in, "%d", pipe_fds[0]);
             // TODO: Pass read end of pipe to child process
+            execl(executable_path, executable_name, in, NULL);
 
         #endif
 
@@ -102,6 +105,10 @@ void execute_solution(char *executable_path, char *input, int batch_idx) {
     else if (pid > 0) {
         #ifdef PIPE
             // TODO: Send input to child process via pipe
+            int inp = atoi(input);
+            close(pipe_fds[0]);
+            write(pipe_fds[1], &inp, sizeof(int));
+            close(pipe_fds[1]);
             
         #endif
         

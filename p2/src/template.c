@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
         
     #elif PIPE
-        read(argv[1][0], &param, sizeof(int));
+        read(atoi(argv[1]), &param, sizeof(int));
 
 
     #elif MQUEUE
